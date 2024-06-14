@@ -22,6 +22,16 @@ public class ProductController {
 
     private final ProductService productService;
 
+    @GetMapping("/admin")
+    @PreAuthorize("hasRole('ADMIN')")
+    public PagedResponse<ProductResponse> getProductForAdmin(
+            @RequestParam(name = "page", required = false, defaultValue = AppConstants.DEFAULT_PAGE_NUMBER) Integer page,
+            @RequestParam(name = "size", required = false, defaultValue = AppConstants.DEFAULT_PAGE_SIZE) Integer size
+    ) {
+        AppUtils.validatePageNumberAndSize(page, size);
+        return productService.getAllProductsForAdmin(page, size);
+    }
+
     @GetMapping
     @PreAuthorize("hasRole('USER')")
     public PagedResponse<ProductResponse> getProduct(
@@ -32,17 +42,40 @@ public class ProductController {
         return productService.getAllProducts(page, size);
     }
 
+
+    @GetMapping("/admin/s")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse> searchProductsForAdmin(
+            @RequestParam(name = "page", required = false, defaultValue = AppConstants.DEFAULT_PAGE_NUMBER) Integer page,
+            @RequestParam(name = "size", required = false, defaultValue = AppConstants.DEFAULT_PAGE_SIZE) Integer size,
+            @RequestParam(required = false) String query
+    ) {
+        ApiResponse response = new ApiResponse(true, "search product");
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    @GetMapping("/admin/s/f")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse> searchHavFilterProductsForAdmin(
+            @RequestParam(name = "page", required = false, defaultValue = AppConstants.DEFAULT_PAGE_NUMBER) Integer page,
+            @RequestParam(name = "size", required = false, defaultValue = AppConstants.DEFAULT_PAGE_SIZE) Integer size,
+            @RequestParam(required = false) String query,
+            @RequestParam(required = false) String saleStatus,
+            @RequestParam(required = false) String orderBy,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(required = false) double minPrice,
+            @RequestParam(required = false) double maxPrice
+    ) {
+        ApiResponse response = new ApiResponse(true, "search product");
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
     @GetMapping("/s")
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<ApiResponse> searchProducts(
             @RequestParam(name = "page", required = false, defaultValue = AppConstants.DEFAULT_PAGE_NUMBER) Integer page,
             @RequestParam(name = "size", required = false, defaultValue = AppConstants.DEFAULT_PAGE_SIZE) Integer size,
-            @RequestParam(required = false) String query,
-            @RequestParam(required = false) Double priceMin,
-            @RequestParam(required = false) Double priceMax,
-            @RequestParam(defaultValue = "totalSold") String sortBy,
-            @RequestParam(defaultValue = "desc") String sortDirection,
-            @RequestParam(required = false) Long brandId
+            @RequestParam(required = false) String query
     ) {
         ApiResponse response = new ApiResponse(true, "search product");
         return new ResponseEntity<>(response, HttpStatus.OK);
@@ -52,6 +85,12 @@ public class ProductController {
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<ApiResponse> getProductById(@PathVariable Long id) {
         return productService.getProduct(id);
+    }
+
+    @GetMapping("/{id}/price")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<ApiResponse> getProductPriceById(@PathVariable Long id) {
+        return productService.getProductPrice(id);
     }
 
     @PostMapping

@@ -1,5 +1,6 @@
 package com.phuctri.shoesapi.payload.request;
 
+import com.phuctri.shoesapi.entities.product.ProductStatus;
 import com.phuctri.shoesapi.payload.ColorPayload;
 import lombok.Getter;
 
@@ -12,8 +13,9 @@ public class ProductRequest {
     private double price;
     private long brandId;
     private String mainImg;
-    private List<Integer> size;
+    private List<Integer> sizes;
     private List<ColorPayload> colors;
     private List<String> imgs;
+    private ProductStatus status;
 }
 

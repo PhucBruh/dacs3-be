@@ -5,6 +5,7 @@ import com.phuctri.shoesapi.entities.User;
 import com.phuctri.shoesapi.entities.order.OrderInfo;
 import com.phuctri.shoesapi.entities.order.OrderDetail;
 import com.phuctri.shoesapi.entities.order.OrderStatus;
+import com.phuctri.shoesapi.entities.product.Brand;
 import com.phuctri.shoesapi.entities.product.Color;
 import com.phuctri.shoesapi.entities.product.Product;
 import com.phuctri.shoesapi.entities.product.Size;
@@ -12,10 +13,7 @@ import com.phuctri.shoesapi.exception.ResourceNotFoundException;
 import com.phuctri.shoesapi.exception.ShoesApiException;
 import com.phuctri.shoesapi.payload.request.ChangePasswordRequest;
 import com.phuctri.shoesapi.payload.request.OrderRequest;
-import com.phuctri.shoesapi.payload.response.ApiResponse;
-import com.phuctri.shoesapi.payload.response.DataResponse;
-import com.phuctri.shoesapi.payload.response.OrderDetailResponse;
-import com.phuctri.shoesapi.payload.response.UserProfile;
+import com.phuctri.shoesapi.payload.response.*;
 import com.phuctri.shoesapi.repository.InventoryRepository;
 import com.phuctri.shoesapi.repository.OrderRepository;
 import com.phuctri.shoesapi.repository.ProductRepository;
@@ -31,6 +29,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.AccessDeniedException;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -66,8 +65,21 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public ResponseEntity<ApiResponse> getCurrentUserOrderList(UserPrincipal currentUser) {
-        return null;
+    public ResponseEntity<ApiResponse> getCurrentUserOrderList(UserPrincipal currentUser, Boolean completed) {
+        List<OrderInfo> orderInfos = new ArrayList<>();
+
+        if (completed) {
+            orderInfos = orderRepository.findAllByUserIdAndStatus(currentUser.getId(), OrderStatus.COMPLETED);
+        } else {
+            orderInfos = orderRepository.findAllByUserIdAndStatusNot(currentUser.getId(), OrderStatus.COMPLETED);
+        }
+
+        List<OrderResponse> orderResponses = orderInfos.stream()
+                .map(OrderResponse::toOrderResponse)
+                .toList();
+
+        DataResponse dataResponse = new DataResponse(true, orderResponses);
+        return new ResponseEntity<>(dataResponse, HttpStatus.OK);
     }
 
     @Override
@@ -115,7 +127,7 @@ public class UserServiceImpl implements UserService {
 
                     if (orderDetailRequest.getQuantity() > inventory.getStock()) {
                         throw new ShoesApiException(
-                                HttpStatus.INTERNAL_SERVER_ERROR,
+                                HttpStatus.OK,
                                 "There are %s stock product '%s' with sizes '%s', color '%s' left!"
                                         .formatted(inventory.getStock(), detailProduct.getName(), detailSize.getSize(), detailColor.getName()));
                     }
@@ -144,7 +156,7 @@ public class UserServiceImpl implements UserService {
 
         OrderInfo newOrder = orderRepository.save(order);
 
-        DataResponse response = new DataResponse(true, AppConstants.CREATE_SUCCESSFULLY, OrderDetailResponse.toOrderResponse(newOrder));
+        ApiResponse response = new ApiResponse(true, AppConstants.CREATE_SUCCESSFULLY);
 
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }

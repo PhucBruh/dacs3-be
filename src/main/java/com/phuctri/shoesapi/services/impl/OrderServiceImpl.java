@@ -1,26 +1,26 @@
 package com.phuctri.shoesapi.services.impl;
 
-import com.phuctri.shoesapi.controller.ProductController;
 import com.phuctri.shoesapi.entities.Inventory;
-import com.phuctri.shoesapi.entities.order.OrderDetail;
 import com.phuctri.shoesapi.entities.order.OrderInfo;
 import com.phuctri.shoesapi.entities.order.OrderStatus;
-import com.phuctri.shoesapi.entities.product.Product;
 import com.phuctri.shoesapi.exception.ResourceNotFoundException;
 import com.phuctri.shoesapi.exception.ShoesApiException;
-import com.phuctri.shoesapi.payload.response.ApiResponse;
-import com.phuctri.shoesapi.payload.response.DataResponse;
-import com.phuctri.shoesapi.payload.response.OrderDetailResponse;
+import com.phuctri.shoesapi.payload.response.*;
 import com.phuctri.shoesapi.repository.InventoryRepository;
 import com.phuctri.shoesapi.repository.OrderRepository;
 import com.phuctri.shoesapi.repository.ProductRepository;
-import com.phuctri.shoesapi.services.InventoryService;
 import com.phuctri.shoesapi.services.OrderService;
 import com.phuctri.shoesapi.util.AppConstants;
 import lombok.AllArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+
+import java.util.Collections;
+import java.util.List;
 
 @Service
 @AllArgsConstructor
@@ -29,6 +29,33 @@ public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
     private final InventoryRepository inventoryRepository;
     private final ProductRepository productRepository;
+
+    @Override
+    public PagedResponse<OrderResponse> getAllOrder(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+
+        Page<OrderInfo> orderInfos
+                = orderRepository.findAll(pageable);
+
+        if (orderInfos.getNumberOfElements() == 0) {
+            return new PagedResponse<>(Collections.emptyList(), orderInfos.getNumber(), orderInfos.getSize(), orderInfos.getTotalElements(),
+                    orderInfos.getTotalPages(), orderInfos.isLast());
+        }
+
+        List<OrderResponse> orderResponses = orderInfos.stream()
+                .map(OrderResponse::toOrderResponse).toList();
+
+        return new PagedResponse<>(orderResponses, orderInfos.getNumber(), orderInfos.getSize(), orderInfos.getTotalElements(), orderInfos.getTotalPages(), orderInfos.isLast());
+    }
+
+    @Override
+    public ResponseEntity<ApiResponse> getOrderInfo(Long id) {
+        OrderInfo order = orderRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Order", "ID", id));
+
+        DataResponse response = new DataResponse(true, OrderDetailResponse.toOrderResponse(order));
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
 
     @Override
     public ResponseEntity<ApiResponse> updateOrderStatus(Long id, OrderStatus orderStatus) {

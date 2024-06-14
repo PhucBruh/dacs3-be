@@ -12,7 +12,7 @@ public interface UserService {
 
     ResponseEntity<ApiResponse> getUserProfile(String username);
 
-    ResponseEntity<ApiResponse> getCurrentUserOrderList(UserPrincipal currentUser);
+    ResponseEntity<ApiResponse> getCurrentUserOrderList(UserPrincipal currentUser, Boolean completed);
 
     ResponseEntity<ApiResponse> getCurrentUserOrderById(UserPrincipal currentUser, Long id);
 

@@ -27,13 +27,15 @@ public class UserController {
     @PostMapping("/me/password")
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<ApiResponse> updatePassword(@CurrentUser UserPrincipal currentUser, @RequestBody ChangePasswordRequest changePasswordRequest) {
-        return userService.changePassword(currentUser, changePasswordRequest);
+        return null;
     }
 
     @GetMapping("/me/order")
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<ApiResponse> getCurrentUserOrder(@CurrentUser UserPrincipal currentUser) {
-        return userService.getCurrentUserOrderList(currentUser);
+    public ResponseEntity<ApiResponse> getCurrentUserOrder(
+            @CurrentUser UserPrincipal currentUser,
+            @RequestParam(name = "completed", required = false, defaultValue = "false") boolean completed) {
+        return userService.getCurrentUserOrderList(currentUser, completed);
     }
 
     @GetMapping("/me/order/{id}")

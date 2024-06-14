@@ -12,6 +12,7 @@ import java.util.List;
 @Builder
 @Getter
 public class OrderDetailResponse implements Serializable {
+
     private long id;
     private User user;
     private String shippingAddress;

@@ -5,11 +5,9 @@ import com.phuctri.shoesapi.entities.SpecialOffer;
 import com.phuctri.shoesapi.entities.product.*;
 import com.phuctri.shoesapi.exception.ResourceNotFoundException;
 import com.phuctri.shoesapi.payload.request.FilterRequest;
+import com.phuctri.shoesapi.payload.request.InventoryRequest;
 import com.phuctri.shoesapi.payload.request.ProductRequest;
-import com.phuctri.shoesapi.payload.response.ApiResponse;
-import com.phuctri.shoesapi.payload.response.DataResponse;
-import com.phuctri.shoesapi.payload.response.PagedResponse;
-import com.phuctri.shoesapi.payload.response.ProductResponse;
+import com.phuctri.shoesapi.payload.response.*;
 import com.phuctri.shoesapi.repository.*;
 import com.phuctri.shoesapi.services.ProductService;
 import com.phuctri.shoesapi.util.AppConstants;
@@ -23,8 +21,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import javax.swing.text.html.Option;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @AllArgsConstructor
@@ -41,7 +41,7 @@ public class ProductServiceImpl implements ProductService {
     public PagedResponse<ProductResponse> getAllProducts(int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
 
-        Page<Product> products = productRepository.findByStatusNot(ProductStatus.IN_ACTIVE, pageable);
+        Page<Product> products = productRepository.findByStatus(ProductStatus.ACTIVE, pageable);
 
         if (products.getNumberOfElements() == 0) {
             return new PagedResponse<>(Collections.emptyList(), products.getNumber(), products.getSize(), products.getTotalElements(),
@@ -56,6 +56,29 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public PagedResponse<ProductResponse> searchProduct(int page, int size, FilterRequest filterRequest) {
+        String jpql = "SELECT p FROM Product p WHERE 1 = 1";
+        return null;
+    }
+
+    @Override
+    public PagedResponse<ProductResponse> getAllProductsForAdmin(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+
+        Page<Product> products = productRepository.findAll(pageable);
+
+        if (products.getNumberOfElements() == 0) {
+            return new PagedResponse<>(Collections.emptyList(), products.getNumber(), products.getSize(), products.getTotalElements(),
+                    products.getTotalPages(), products.isLast());
+        }
+
+        List<ProductResponse> productResponses = products.stream()
+                .map(ProductResponse::toProductResponse).toList();
+
+        return new PagedResponse<>(productResponses, products.getNumber(), products.getSize(), products.getTotalElements(), products.getTotalPages(), products.isLast());
+    }
+
+    @Override
+    public PagedResponse<ProductResponse> searchProductForAdmin(int page, int size, FilterRequest filterRequest) {
         return null;
     }
 
@@ -74,6 +97,7 @@ public class ProductServiceImpl implements ProductService {
                     .mainImg(productRequest.getMainImg())
                     .totalSold(0L)
                     .rating(5.0)
+                    .status(productRequest.getStatus())
                     .build();
 
 
@@ -86,7 +110,7 @@ public class ProductServiceImpl implements ProductService {
                     .toList();
             newProduct.setColors(colors);
 
-            List<Size> sizes = productRequest.getSize().stream()
+            List<Size> sizes = productRequest.getSizes().stream()
                     .map(size -> Size.builder()
                             .size(size)
                             .product(newProduct)
@@ -120,35 +144,43 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public ResponseEntity<ApiResponse> updateProduct(Long id, ProductRequest newProduct) {
+    public ResponseEntity<ApiResponse> getProductPrice(Long id) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product", "ID", id));
+        DataResponse response = new DataResponse(true, ProductPriceResponse.toProductPriceResponse(product));
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    @Override
+    public ResponseEntity<ApiResponse> updateProduct(Long id, ProductRequest updateProductRequest) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product", "ID", id));
 
-        if (newProduct.getName() != null && !newProduct.getName().isEmpty()) {
-            product.setName(newProduct.getName());
+        if (updateProductRequest.getName() != null && !updateProductRequest.getName().isEmpty()) {
+            product.setName(updateProductRequest.getName());
         }
 
-        if (newProduct.getDescription() != null && !newProduct.getDescription().isEmpty()) {
-            product.setDescription(newProduct.getDescription());
+        if (updateProductRequest.getDescription() != null && !updateProductRequest.getDescription().isEmpty()) {
+            product.setDescription(updateProductRequest.getDescription());
         }
 
-        if (newProduct.getBrandId() != 0) {
-            Brand brand = brandRepository.findById(newProduct.getBrandId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Brand", "ID", newProduct.getBrandId()));
+        if (updateProductRequest.getBrandId() != 0) {
+            Brand brand = brandRepository.findById(updateProductRequest.getBrandId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Brand", "ID", updateProductRequest.getBrandId()));
             product.setBrand(brand);
         }
 
-        if (newProduct.getMainImg() != null && !newProduct.getMainImg().isEmpty()) {
-            product.setMainImg(newProduct.getMainImg());
+        if (updateProductRequest.getMainImg() != null && !updateProductRequest.getMainImg().isEmpty()) {
+            product.setMainImg(updateProductRequest.getMainImg());
         }
 
-        if (newProduct.getPrice() != 0.0) {
-            product.setPrice(newProduct.getPrice());
+        if (updateProductRequest.getPrice() != 0.0) {
+            product.setPrice(updateProductRequest.getPrice());
         }
 
-        if (newProduct.getColors() != null && !newProduct.getColors().isEmpty()) {
+        if (updateProductRequest.getColors() != null && !updateProductRequest.getColors().isEmpty()) {
             product.getColors().addAll(
-                    newProduct.getColors().stream()
+                    updateProductRequest.getColors().stream()
                             .map(colorRequest -> Color.builder()
                                     .name(colorRequest.getName())
                                     .value(colorRequest.getValue())
@@ -156,34 +188,28 @@ public class ProductServiceImpl implements ProductService {
                                     .build())
                             .toList()
             );
-        } else if (newProduct.getColors() != null) {
-            product.getColors().clear();
         }
 
-        if (newProduct.getSize() != null && !newProduct.getSize().isEmpty()) {
+        if (updateProductRequest.getSizes() != null && !updateProductRequest.getSizes().isEmpty()) {
             product.getSizes().addAll(
-                    newProduct.getSize().stream()
+                    updateProductRequest.getSizes().stream()
                             .map(size -> Size.builder()
                                     .size(size)
                                     .product(product)
                                     .build())
                             .toList()
             );
-        } else if (newProduct.getSize() != null) {
-            product.getSizes().clear();
         }
 
-        if (newProduct.getImgs() != null && !newProduct.getImgs().isEmpty()) {
+        if (updateProductRequest.getImgs() != null && !updateProductRequest.getImgs().isEmpty()) {
             product.getImgs().addAll(
-                    newProduct.getImgs().stream()
+                    updateProductRequest.getImgs().stream()
                             .map(url -> Image.builder()
                                     .url(url)
                                     .product(product)
                                     .build())
                             .toList()
             );
-        } else if (newProduct.getImgs() != null) {
-            product.getImgs().clear();
         }
 
         Product updatedProduct = productRepository.save(product);

@@ -14,11 +14,17 @@ public interface ProductService {
 
     PagedResponse<ProductResponse> searchProduct(int page, int size, FilterRequest filterRequest);
 
+    PagedResponse<ProductResponse> getAllProductsForAdmin(int page, int size);
+
+    PagedResponse<ProductResponse> searchProductForAdmin(int page, int size, FilterRequest filterRequest);
+
     ResponseEntity<Product> addProduct(ProductRequest productRequest);
 
     ResponseEntity<ApiResponse> getProduct(Long id);
 
-    ResponseEntity<ApiResponse> updateProduct(Long id, ProductRequest newProduct);
+    ResponseEntity<ApiResponse> getProductPrice(Long id);
+
+    ResponseEntity<ApiResponse> updateProduct(Long id, ProductRequest updateProductRequest);
 
     ResponseEntity<ApiResponse> deleteProduct(Long id);
 

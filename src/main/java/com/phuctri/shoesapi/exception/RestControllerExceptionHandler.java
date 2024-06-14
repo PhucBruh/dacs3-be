@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -14,7 +15,9 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
+import javax.security.auth.login.CredentialException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -22,16 +25,27 @@ import java.util.Objects;
 @ControllerAdvice
 public class RestControllerExceptionHandler {
 
-//    @ExceptionHandler(Exception.class)
-//    @ResponseBody
-//    public ResponseEntity<ApiResponse> resolveException(Exception exception) {
-//        ApiResponse apiResponse = new ApiResponse();
-//
-//        apiResponse.setSuccess(Boolean.FALSE);
-//        apiResponse.setMessage("some error occurred ");
-//
-//        return new ResponseEntity<>(apiResponse, HttpStatus.NO_CONTENT);
-//    }
+    @ExceptionHandler(Exception.class)
+    @ResponseBody
+    public ResponseEntity<ApiResponse> resolveException(Exception exception) {
+        ApiResponse apiResponse = new ApiResponse();
+
+        apiResponse.setSuccess(Boolean.FALSE);
+        apiResponse.setMessage("some error occurred ");
+
+        return new ResponseEntity<>(apiResponse, HttpStatus.NO_CONTENT);
+    }
+
+    @ExceptionHandler(BadCredentialsException.class)
+    @ResponseBody
+    public ResponseEntity<ApiResponse> resolveException(BadCredentialsException exception) {
+        ApiResponse apiResponse = new ApiResponse();
+
+        apiResponse.setSuccess(Boolean.FALSE);
+        apiResponse.setMessage("Username or password not correct");
+
+        return new ResponseEntity<>(apiResponse, HttpStatus.BAD_REQUEST);
+    }
 
     @ExceptionHandler(ShoesApiException.class)
     @ResponseBody
@@ -85,6 +99,14 @@ public class RestControllerExceptionHandler {
         ApiResponse apiResponse = new ApiResponse(false, message);
 
         return new ResponseEntity<>(apiResponse, HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    @ResponseBody
+    public ResponseEntity<ApiResponse> resolveException(NoResourceFoundException exception) {
+        ApiResponse apiResponse = new ApiResponse(false, "No resource found");
+
+        return new ResponseEntity<>(apiResponse, HttpStatus.NO_CONTENT);
     }
 
     @ExceptionHandler(AccessDeniedException.class)

@@ -2,19 +2,27 @@ package com.phuctri.shoesapi.services.impl;
 
 import com.phuctri.shoesapi.entities.SpecialOffer;
 import com.phuctri.shoesapi.entities.product.Product;
+import com.phuctri.shoesapi.entities.product.ProductStatus;
 import com.phuctri.shoesapi.exception.ResourceNotFoundException;
 import com.phuctri.shoesapi.payload.request.SpecialOfferRequest;
 import com.phuctri.shoesapi.payload.response.ApiResponse;
+import com.phuctri.shoesapi.payload.response.PagedResponse;
+import com.phuctri.shoesapi.payload.response.ProductResponse;
+import com.phuctri.shoesapi.payload.response.SpecialOfferResponse;
 import com.phuctri.shoesapi.repository.ProductRepository;
 import com.phuctri.shoesapi.repository.SpecialOfferRepository;
 import com.phuctri.shoesapi.services.SpecialOfferService;
 import com.phuctri.shoesapi.util.AppConstants;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.io.StringWriter;
+import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -23,6 +31,40 @@ public class SpecialOfferServiceImpl implements SpecialOfferService {
 
     private final ProductRepository productRepository;
     private final SpecialOfferRepository specialOfferRepository;
+
+    @Override
+    public PagedResponse<SpecialOfferResponse> getAllSpecialOffers(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+
+        Page<SpecialOffer> specialOffers = specialOfferRepository.findAllByActiveTrue(pageable);
+
+        if (specialOffers.getNumberOfElements() == 0) {
+            return new PagedResponse<>(Collections.emptyList(), specialOffers.getNumber(), specialOffers.getSize(), specialOffers.getTotalElements(),
+                    specialOffers.getTotalPages(), specialOffers.isLast());
+        }
+
+        List<SpecialOfferResponse> specialOfferResponses = specialOffers.stream()
+                .map(SpecialOfferResponse::toSpecialOfferResponse).toList();
+
+        return new PagedResponse<>(specialOfferResponses, specialOffers.getNumber(), specialOffers.getSize(), specialOffers.getTotalElements(), specialOffers.getTotalPages(), specialOffers.isLast());
+    }
+
+    @Override
+    public PagedResponse<SpecialOfferResponse> getAllSpecialOffersByAdmin(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+
+        Page<SpecialOffer> specialOffers = specialOfferRepository.findAll(pageable);
+
+        if (specialOffers.getNumberOfElements() == 0) {
+            return new PagedResponse<>(Collections.emptyList(), specialOffers.getNumber(), specialOffers.getSize(), specialOffers.getTotalElements(),
+                    specialOffers.getTotalPages(), specialOffers.isLast());
+        }
+
+        List<SpecialOfferResponse> specialOfferResponses = specialOffers.stream()
+                .map(SpecialOfferResponse::toSpecialOfferResponse).toList();
+
+        return new PagedResponse<>(specialOfferResponses, specialOffers.getNumber(), specialOffers.getSize(), specialOffers.getTotalElements(), specialOffers.getTotalPages(), specialOffers.isLast());
+    }
 
     @Override
     public ResponseEntity<ApiResponse> addSpecialOffer(SpecialOfferRequest specialOfferRequest) {
@@ -35,6 +77,12 @@ public class SpecialOfferServiceImpl implements SpecialOfferService {
             return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
         }
 
+        List<SpecialOffer> specialOffers = specialOfferRepository.findByActiveTrueAndProduct(product);
+        if (!specialOffers.isEmpty()) {
+            ApiResponse response = new ApiResponse(false, "other special offer of this product is active, pls inactive or delete all");
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        }
+
         SpecialOffer specialOffer = SpecialOffer.builder()
                 .product(product)
                 .name(specialOfferRequest.getName())
@@ -44,7 +92,8 @@ public class SpecialOfferServiceImpl implements SpecialOfferService {
                 .build();
         specialOfferRepository.save(specialOffer);
 
-        product.setPromotionalPrice(product.getPrice() * (specialOfferRequest.getValue() / 100));
+        product.setPromotionalPrice(product.getPrice() * (100 - specialOfferRequest.getValue()) / 100);
+        productRepository.save(product);
 
         ApiResponse response = new ApiResponse(true, AppConstants.CREATE_SUCCESSFULLY);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
@@ -52,6 +101,16 @@ public class SpecialOfferServiceImpl implements SpecialOfferService {
 
     @Override
     public ResponseEntity<ApiResponse> updateActive(Long id, Boolean active) {
+
+        SpecialOffer specialOffer = specialOfferRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("SpecialOffer", "ID", id));
+
+        if (specialOffer.getActive().equals(active)) {
+            ApiResponse response = new ApiResponse(
+                    false,
+                    "Special offer is current %s".formatted(active));
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        }
 
         // check if any other special offer of product is active
         if (active) {
@@ -64,26 +123,18 @@ public class SpecialOfferServiceImpl implements SpecialOfferService {
             }
         }
 
-        SpecialOffer specialOffer = specialOfferRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("SpecialOffer", "ID", id));
-
-        if (specialOffer.getActive().equals(active)) {
-            ApiResponse response = new ApiResponse(
-                    false,
-                    "Special offer is current %s".formatted(active));
-            return new ResponseEntity<>(response, HttpStatus.OK);
-        }
-
         specialOffer.setActive(active);
         specialOfferRepository.save(specialOffer);
 
         // Reset promotion price if active is false
-        if (!active) {
+        if (active) {
+            specialOffer.getProduct().setPromotionalPrice(specialOffer.getProduct().getPrice() * (100 - specialOffer.getValue()) / 100);
+        } else {
             specialOffer.getProduct().setPromotionalPrice(0.0);
-            productRepository.save(specialOffer.getProduct());
         }
+        productRepository.save(specialOffer.getProduct());
 
-        ApiResponse response = new ApiResponse(false, AppConstants.UPDATE_SUCCESSFULLY);
+        ApiResponse response = new ApiResponse(true, AppConstants.UPDATE_SUCCESSFULLY);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
@@ -94,7 +145,7 @@ public class SpecialOfferServiceImpl implements SpecialOfferService {
 
         List<SpecialOffer> specialOffers = specialOfferRepository.findByProduct(product);
 
-        if (!specialOffers.isEmpty()) {
+        if (specialOffers.isEmpty()) {
             ApiResponse response = new ApiResponse(false, "This product has no special offers");
             return new ResponseEntity<>(response, HttpStatus.OK);
         }

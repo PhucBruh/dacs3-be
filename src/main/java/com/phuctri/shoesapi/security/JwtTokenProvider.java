@@ -1,5 +1,6 @@
 package com.phuctri.shoesapi.security;
 
+import com.phuctri.shoesapi.exception.ShoesApiException;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
@@ -10,6 +11,7 @@ import io.jsonwebtoken.UnsupportedJwtException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
@@ -54,12 +56,16 @@ public class JwtTokenProvider {
             return true;
         } catch (SignatureException ex) {
             LOGGER.error("Invalid JWT signature");
+            throw new ShoesApiException(HttpStatus.BAD_REQUEST, "Invalid JWT signature");
         } catch (MalformedJwtException ex) {
             LOGGER.error("Invalid JWT token");
+            throw new ShoesApiException(HttpStatus.BAD_REQUEST, "Invalid JWT token");
         } catch (ExpiredJwtException ex) {
             LOGGER.error("Expired JWT token");
+            throw new ShoesApiException(HttpStatus.BAD_REQUEST, "Expired JWT token");
         } catch (UnsupportedJwtException ex) {
             LOGGER.error("Unsupported JWT token");
+            throw new ShoesApiException(HttpStatus.BAD_REQUEST, "Unsupported JWT token");
         } catch (IllegalArgumentException ex) {
             LOGGER.error("JWT claims string is empty");
         }

@@ -10,7 +10,11 @@ import org.springframework.http.ResponseEntity;
 public interface InventoryService {
     PagedResponse<InventoryResponse> getAllInventory(int page, int size);
 
+    PagedResponse<InventoryResponse> query(String query, int page, int size);
+
     ResponseEntity<ApiResponse> getInventoryInfo(Long id);
+
+    ResponseEntity<ApiResponse> check(Long id);
 
     ResponseEntity<ApiResponse> createInventory(InventoryRequest inventoryRequest);
 

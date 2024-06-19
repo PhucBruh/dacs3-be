@@ -3,6 +3,7 @@ package com.phuctri.shoesapi.controller;
 import com.phuctri.shoesapi.payload.request.InventoryRequest;
 import com.phuctri.shoesapi.payload.response.ApiResponse;
 import com.phuctri.shoesapi.payload.response.InventoryResponse;
+import com.phuctri.shoesapi.payload.response.OrderResponse;
 import com.phuctri.shoesapi.payload.response.PagedResponse;
 import com.phuctri.shoesapi.services.InventoryService;
 import com.phuctri.shoesapi.util.AppConstants;
@@ -16,7 +17,6 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/inventory")
 @RequiredArgsConstructor
 public class InventoryController {
-
     private final InventoryService inventoryService;
 
     @GetMapping
@@ -29,10 +29,29 @@ public class InventoryController {
         return inventoryService.getAllInventory(page, size);
     }
 
+    @GetMapping("/q")
+    @PreAuthorize("hasRole('ADMIN')")
+    public PagedResponse<InventoryResponse> query(
+            @RequestParam(name = "query", required = false, defaultValue = "") String query,
+            @RequestParam(name = "page", required = false, defaultValue = AppConstants.DEFAULT_PAGE_NUMBER) Integer page,
+            @RequestParam(name = "size", required = false, defaultValue = AppConstants.DEFAULT_PAGE_SIZE) Integer size
+    ) {
+        AppUtils.validatePageNumberAndSize(page, size);
+        return inventoryService.query(query, page, size);
+    }
+
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse> getInventoryById(@PathVariable Long id) {
         return inventoryService.getInventoryInfo(id);
+    }
+
+    @GetMapping("/check/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse> check(
+            @PathVariable Long id
+    ) {
+        return inventoryService.check(id);
     }
 
     @GetMapping("/s")

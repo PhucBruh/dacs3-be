@@ -13,6 +13,7 @@ public class InventoryResponse {
     private long id;
     private long productId;
     private String productName;
+    private String productImg;
     private Size size;
     private Color color;
     private int stock;
@@ -37,6 +38,7 @@ public class InventoryResponse {
                 .id(inventory.getId())
                 .productId(inventory.getProduct().getId())
                 .productName(inventory.getProduct().getName())
+                .productImg(inventory.getProduct().getMainImg())
                 .size(new
                         Size(inventory.getSize().getId(),
                         inventory.getSize().getSize()))

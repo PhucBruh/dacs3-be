@@ -4,7 +4,11 @@ import com.phuctri.shoesapi.entities.Inventory;
 import com.phuctri.shoesapi.entities.product.Color;
 import com.phuctri.shoesapi.entities.product.Product;
 import com.phuctri.shoesapi.entities.product.Size;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.web.bind.annotation.RequestBody;
 
@@ -16,6 +20,15 @@ import java.util.Optional;
 public interface InventoryRepository extends JpaRepository<Inventory, Long> {
 
     List<Inventory> findAllByProductId(Long id);
+
+    @Query("SELECT i " +
+            "FROM Inventory i " +
+            "WHERE i.product.name like %:query% " +
+            "or i.product.description like %:query% " +
+            "or i.color.name like %:query%")
+    Page<Inventory> findAllByQuery(@Param("query") String query, Pageable pageable);
+
+    List<Inventory> findAllByProductIdAndStockGreaterThan(Long id, Integer stock);
 
     List<Inventory> findByProduct(Product product);
 

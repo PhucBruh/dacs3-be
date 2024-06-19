@@ -5,10 +5,7 @@ import com.phuctri.shoesapi.entities.User;
 import com.phuctri.shoesapi.entities.order.OrderInfo;
 import com.phuctri.shoesapi.entities.order.OrderDetail;
 import com.phuctri.shoesapi.entities.order.OrderStatus;
-import com.phuctri.shoesapi.entities.product.Brand;
-import com.phuctri.shoesapi.entities.product.Color;
-import com.phuctri.shoesapi.entities.product.Product;
-import com.phuctri.shoesapi.entities.product.Size;
+import com.phuctri.shoesapi.entities.product.*;
 import com.phuctri.shoesapi.exception.ResourceNotFoundException;
 import com.phuctri.shoesapi.exception.ShoesApiException;
 import com.phuctri.shoesapi.payload.request.ChangePasswordRequest;
@@ -130,6 +127,16 @@ public class UserServiceImpl implements UserService {
                                 HttpStatus.OK,
                                 "There are %s stock product '%s' with sizes '%s', color '%s' left!"
                                         .formatted(inventory.getStock(), detailProduct.getName(), detailSize.getSize(), detailColor.getName()));
+                    }
+
+                    if (orderDetailRequest.getQuantity() - inventory.getStock() == 0) {
+                        List<Inventory> inventories = inventoryRepository.findAllByProductIdAndStockGreaterThan(orderDetailRequest.getProductId(), 0);
+                        if (inventories.isEmpty()) {
+                            if (inventory.getProduct().getStatus() != ProductStatus.IN_ACTIVE) {
+                                detailProduct.setStatus(ProductStatus.OUT_OF_STOCK);
+                                productRepository.save(detailProduct);
+                            }
+                        }
                     }
 
                     inventory.setStock(inventory.getStock() - orderDetailRequest.getQuantity());

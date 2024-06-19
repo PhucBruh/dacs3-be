@@ -4,11 +4,9 @@ import com.phuctri.shoesapi.entities.SpecialOffer;
 import com.phuctri.shoesapi.entities.product.Product;
 import com.phuctri.shoesapi.entities.product.ProductStatus;
 import com.phuctri.shoesapi.exception.ResourceNotFoundException;
+import com.phuctri.shoesapi.exception.ShoesApiException;
 import com.phuctri.shoesapi.payload.request.SpecialOfferRequest;
-import com.phuctri.shoesapi.payload.response.ApiResponse;
-import com.phuctri.shoesapi.payload.response.PagedResponse;
-import com.phuctri.shoesapi.payload.response.ProductResponse;
-import com.phuctri.shoesapi.payload.response.SpecialOfferResponse;
+import com.phuctri.shoesapi.payload.response.*;
 import com.phuctri.shoesapi.repository.ProductRepository;
 import com.phuctri.shoesapi.repository.SpecialOfferRepository;
 import com.phuctri.shoesapi.services.SpecialOfferService;
@@ -64,6 +62,39 @@ public class SpecialOfferServiceImpl implements SpecialOfferService {
                 .map(SpecialOfferResponse::toSpecialOfferResponse).toList();
 
         return new PagedResponse<>(specialOfferResponses, specialOffers.getNumber(), specialOffers.getSize(), specialOffers.getTotalElements(), specialOffers.getTotalPages(), specialOffers.isLast());
+    }
+
+    @Override
+    public PagedResponse<SpecialOfferResponse> getAllSpecialOffersQuery(String query, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+
+        Page<SpecialOffer> specialOffers = specialOfferRepository.findAllByQuery(query, pageable);
+
+        if (specialOffers.getNumberOfElements() == 0) {
+            return new PagedResponse<>(Collections.emptyList(), specialOffers.getNumber(), specialOffers.getSize(), specialOffers.getTotalElements(),
+                    specialOffers.getTotalPages(), specialOffers.isLast());
+        }
+
+        List<SpecialOfferResponse> specialOfferResponses = specialOffers.stream()
+                .map(SpecialOfferResponse::toSpecialOfferResponse).toList();
+
+        return new PagedResponse<>(specialOfferResponses, specialOffers.getNumber(), specialOffers.getSize(), specialOffers.getTotalElements(), specialOffers.getTotalPages(), specialOffers.isLast());
+    }
+
+    @Override
+    public ResponseEntity<ApiResponse> check(Long id) {
+        SpecialOffer specialOffer = specialOfferRepository.findById(id)
+                .orElseThrow(() -> new ShoesApiException(HttpStatus.OK, ""));
+        ApiResponse response = new ApiResponse(true, "");
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    @Override
+    public ResponseEntity<ApiResponse> getAllSpecialOffersById(Long id) {
+        SpecialOffer specialOffer = specialOfferRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("SpecialOffer", "ID", id));
+        DataResponse response = new DataResponse(true, SpecialOfferResponse.toSpecialOfferResponse(specialOffer));
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     @Override

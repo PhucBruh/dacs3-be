@@ -8,16 +8,22 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.WeakHashMap;
 
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Long> {
     List<Product> findByBrandId(Long brandId);
 
     List<Product> findByBrand(Brand brand);
+
+    @Query("SELECT p " +
+            "FROM Product p " +
+            "WHERE p.brand.id = :id and p.status = 'ACTIVE'"
+    )
+    Page<Product> findAllByBrandId(@Param("id") Long brandId, Pageable pageable);
 
     Page<Product> findByStatusNot(ProductStatus status, Pageable pageable);
 
@@ -28,22 +34,35 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
             "WHERE " +
             "(:query is null or " +
             ":query = '' or " +
-            "p.name like :query or " +
-            "p.description like :query or " +
-            "p.brand.name like :query) " +
+            "p.name like %:query% or " +
+            "p.description like %:query% or " +
+            "p.brand.name like %:query%) " +
             "AND " +
-            "(:saleStatus = 'DEFAULT')" +
-            "ORDER BY " +
-            "CASE " +
-            "WHEN :orderBy = 'PRICE' THEN p.price " +
-            "WHEN :orderBy = 'RATING' THEN p.rating " +
-            "WHEN :orderBy = 'SOLD' THEN p.totalSold " +
-            "END " +
-            "ASC"
+            "p.price > :minPrice AND p.price<:maxPrice " +
+            "AND " +
+            "(:saleStatus = 'NORMAL' or " +
+            "(:saleStatus = 'ACTIVE' and p.promotionalPrice>0.0) or " +
+            "(:saleStatus = 'INACTIVE' and p.promotionalPrice=0.0)) " +
+            "AND " +
+            "p.status = 'ACTIVE'"
     )
-    List<Product> search(
+    Page<Product> search(
             @Param("query") String query,
             @Param("saleStatus") String saleStatus,
-            @Param("orderBy") String orderBy
+            @Param("minPrice") Double minPrice,
+            @Param("maxPrice") Double maxPrice,
+            Pageable pageable
     );
+
+    @Query("SELECT p " +
+            "FROM Product  p " +
+            "WHERE p.name like %:query% or p.description like %:query%"
+    )
+    Page<Product> searchByQuery(@Param("query") String query, Pageable pageable);
+
+    @Query("SELECT p " +
+            "FROM Product  p " +
+            "WHERE p.name like %:query% or p.description like %:query% and p.status = 'ACTIVE'"
+    )
+    Page<Product> searchByQueryActive(@Param("query") String query, Pageable pageable);
 }

@@ -40,6 +40,25 @@ public class SpecialOfferController {
         return specialOfferService.getAllSpecialOffersByAdmin(page, size);
     }
 
+    @GetMapping("/q")
+    @PreAuthorize("hasRole('ADMIN')")
+    public PagedResponse<SpecialOfferResponse> query(
+            @RequestParam(name = "query", required = false, defaultValue = "") String query,
+            @RequestParam(name = "page", required = false, defaultValue = AppConstants.DEFAULT_PAGE_NUMBER) Integer page,
+            @RequestParam(name = "size", required = false, defaultValue = AppConstants.DEFAULT_PAGE_SIZE) Integer size
+    ) {
+        AppUtils.validatePageNumberAndSize(page, size);
+        return specialOfferService.getAllSpecialOffersQuery(query, page, size);
+    }
+
+    @GetMapping("/check/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse> check(
+            @PathVariable Long id
+    ) {
+        return specialOfferService.check(id);
+    }
+
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse> addSpecialOffer(@RequestBody SpecialOfferRequest specialOfferRequest) {
@@ -52,6 +71,12 @@ public class SpecialOfferController {
             @PathVariable Long id,
             @RequestParam(name = "active") Boolean active) {
         return specialOfferService.updateActive(id, active);
+    }
+
+    @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse> getSpecialOffer(@PathVariable Long id) {
+        return specialOfferService.getAllSpecialOffersById(id);
     }
 
     @DeleteMapping("/product/{id}")

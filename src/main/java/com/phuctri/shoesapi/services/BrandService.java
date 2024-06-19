@@ -13,7 +13,11 @@ import java.util.List;
 public interface BrandService {
     PagedResponse<Brand> getAllBrand(int page, int size);
 
+    PagedResponse<Brand> query(String query, int page, int size);
+
     ResponseEntity<ApiResponse> getById(Long id);
+
+    ResponseEntity<ApiResponse> check(Long id);
 
     ResponseEntity<ApiResponse> addNewBrand(BrandRequest brandRequest);
 

@@ -4,6 +4,7 @@ import com.phuctri.shoesapi.entities.SpecialOffer;
 import com.phuctri.shoesapi.entities.product.Brand;
 import com.phuctri.shoesapi.entities.product.Product;
 import com.phuctri.shoesapi.exception.ResourceNotFoundException;
+import com.phuctri.shoesapi.exception.ShoesApiException;
 import com.phuctri.shoesapi.payload.request.BrandRequest;
 import com.phuctri.shoesapi.payload.response.ApiResponse;
 import com.phuctri.shoesapi.payload.response.DataResponse;
@@ -48,12 +49,36 @@ public class BrandServiceImpl implements BrandService {
     }
 
     @Override
+    public PagedResponse<Brand> query(String query, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+
+        Page<Brand> brands = brandRepository.findAllByQuery(query, pageable);
+
+        if (brands.getNumberOfElements() == 0) {
+            return new PagedResponse<>(Collections.emptyList(), brands.getNumber(), brands.getSize(), brands.getTotalElements(),
+                    brands.getTotalPages(), brands.isLast());
+        }
+
+        List<Brand> specialOfferResponses = brands.stream().toList();
+
+        return new PagedResponse<>(specialOfferResponses, brands.getNumber(), brands.getSize(), brands.getTotalElements(), brands.getTotalPages(), brands.isLast());
+    }
+
+    @Override
     public ResponseEntity<ApiResponse> getById(Long id) {
 
         Brand brand = brandRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Brand", "ID", id));
         ApiResponse response = new DataResponse(true, brand);
 
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    @Override
+    public ResponseEntity<ApiResponse> check(Long id) {
+        Brand brand = brandRepository.findById(id)
+                .orElseThrow(() -> new ShoesApiException(HttpStatus.OK, ""));
+        ApiResponse response = new ApiResponse(true, "");
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 

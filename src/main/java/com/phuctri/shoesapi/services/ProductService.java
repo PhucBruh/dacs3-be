@@ -10,17 +10,36 @@ import org.springframework.http.ResponseEntity;
 
 public interface ProductService {
 
+
     PagedResponse<ProductResponse> getAllProducts(int page, int size);
 
-    PagedResponse<ProductResponse> searchProduct(int page, int size, FilterRequest filterRequest);
+    PagedResponse<ProductResponse> getAllProductsByQueryByAdmin(String query, int page, int size);
+
+    PagedResponse<ProductResponse> search(
+            String query,
+            boolean isFilter,
+            String saleStatus,
+            String orderBy,
+            String sortBy,
+            Double minPrice,
+            Double maxPrice,
+            int page,
+            int size
+    );
 
     PagedResponse<ProductResponse> getAllProductsForAdmin(int page, int size);
 
+    PagedResponse<ProductResponse> getAllProductsByBrandId(Long id, int page, int size);
+
     PagedResponse<ProductResponse> searchProductForAdmin(int page, int size, FilterRequest filterRequest);
 
-    ResponseEntity<Product> addProduct(ProductRequest productRequest);
+    ResponseEntity<ApiResponse> addProduct(ProductRequest productRequest);
 
     ResponseEntity<ApiResponse> getProduct(Long id);
+
+    ResponseEntity<ApiResponse> check(Long id);
+
+    PagedResponse<ProductResponse> getProductReturnPage(Long id);
 
     ResponseEntity<ApiResponse> getProductPrice(Long id);
 

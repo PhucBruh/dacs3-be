@@ -12,6 +12,12 @@ public interface SpecialOfferService {
 
     PagedResponse<SpecialOfferResponse> getAllSpecialOffersByAdmin(int page, int size);
 
+    PagedResponse<SpecialOfferResponse> getAllSpecialOffersQuery(String query, int page, int size);
+
+    ResponseEntity<ApiResponse> check(Long id);
+
+    ResponseEntity<ApiResponse> getAllSpecialOffersById(Long id);
+
     ResponseEntity<ApiResponse> addSpecialOffer(SpecialOfferRequest specialOfferRequest);
 
     ResponseEntity<ApiResponse> updateActive(Long id, Boolean active);

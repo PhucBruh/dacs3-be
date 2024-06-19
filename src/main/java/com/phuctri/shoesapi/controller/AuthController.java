@@ -58,11 +58,11 @@ public class AuthController {
     @PostMapping("/signup")
     public ResponseEntity<ApiResponse> registerUser(@Valid @RequestBody SignUpRequest signUpRequest) {
         if (Boolean.TRUE.equals(userRepository.existsByUsername(signUpRequest.getUsername()))) {
-            throw new ShoesApiException(HttpStatus.BAD_REQUEST, "Username is already taken");
+            throw new ShoesApiException(HttpStatus.OK, "Username is already taken");
         }
 
         if (Boolean.TRUE.equals(userRepository.existsByEmail(signUpRequest.getEmail()))) {
-            throw new ShoesApiException(HttpStatus.BAD_REQUEST, "Email is already taken");
+            throw new ShoesApiException(HttpStatus.OK, "Email is already taken");
         }
 
         String firstName = signUpRequest.getFirstName().toLowerCase();
@@ -75,7 +75,7 @@ public class AuthController {
 
         String password = passwordEncoder.encode(signUpRequest.getPassword());
 
-        User user = new User(firstName, lastName, username, email, password);
+        User user = new User(firstName, lastName, username, email, password, signUpRequest.getPhone());
 
         List<Role> roles = new ArrayList<>();
 

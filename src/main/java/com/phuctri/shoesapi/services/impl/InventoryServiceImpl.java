@@ -1,6 +1,7 @@
 package com.phuctri.shoesapi.services.impl;
 
 import com.phuctri.shoesapi.entities.Inventory;
+import com.phuctri.shoesapi.entities.order.OrderInfo;
 import com.phuctri.shoesapi.entities.product.Color;
 import com.phuctri.shoesapi.entities.product.Product;
 import com.phuctri.shoesapi.entities.product.ProductStatus;
@@ -50,12 +51,37 @@ public class InventoryServiceImpl implements InventoryService {
     }
 
     @Override
+    public PagedResponse<InventoryResponse> query(String query, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+
+        Page<Inventory> inventory = inventoryRepository.findAllByQuery(query, pageable);
+
+        if (inventory.getNumberOfElements() == 0) {
+            return new PagedResponse<>(Collections.emptyList(), inventory.getNumber(), inventory.getSize(), inventory.getTotalElements(),
+                    inventory.getTotalPages(), inventory.isLast());
+        }
+
+        List<InventoryResponse> productResponses = inventory.stream()
+                .map(InventoryResponse::toInventoryResponse).toList();
+
+        return new PagedResponse<>(productResponses, inventory.getNumber(), inventory.getSize(), inventory.getTotalElements(), inventory.getTotalPages(), inventory.isLast());
+    }
+
+    @Override
     public ResponseEntity<ApiResponse> getInventoryInfo(Long id) {
         Inventory inventory = inventoryRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product", "ID", id));
 
         ApiResponse response = new DataResponse(true, InventoryResponse.toInventoryResponse(inventory));
 
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    @Override
+    public ResponseEntity<ApiResponse> check(Long id) {
+        Inventory inventory = inventoryRepository.findById(id)
+                .orElseThrow(() -> new ShoesApiException(HttpStatus.OK, ""));
+        ApiResponse response = new ApiResponse(true, "");
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 

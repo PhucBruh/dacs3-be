@@ -1,6 +1,7 @@
 package com.phuctri.shoesapi.controller;
 
 import com.phuctri.shoesapi.entities.order.OrderStatus;
+import com.phuctri.shoesapi.entities.product.Brand;
 import com.phuctri.shoesapi.payload.response.ApiResponse;
 import com.phuctri.shoesapi.payload.response.OrderResponse;
 import com.phuctri.shoesapi.payload.response.PagedResponse;
@@ -31,10 +32,29 @@ public class OrderController {
         return orderService.getAllOrder(page, size);
     }
 
+    @GetMapping("/q")
+    @PreAuthorize("hasRole('ADMIN')")
+    public PagedResponse<OrderResponse> query(
+            @RequestParam(name = "query", required = false, defaultValue = "") String query,
+            @RequestParam(name = "page", required = false, defaultValue = AppConstants.DEFAULT_PAGE_NUMBER) Integer page,
+            @RequestParam(name = "size", required = false, defaultValue = AppConstants.DEFAULT_PAGE_SIZE) Integer size
+    ) {
+        AppUtils.validatePageNumberAndSize(page, size);
+        return orderService.query(query, page, size);
+    }
+
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse> getOrderById(@PathVariable Long id) {
         return orderService.getOrderInfo(id);
+    }
+
+    @GetMapping("/check/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse> check(
+            @PathVariable Long id
+    ) {
+        return orderService.check(id);
     }
 
     @PutMapping("/{id}")
